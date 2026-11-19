@@ -1,6 +1,7 @@
 package com.crossberry.pointlook
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
@@ -8,6 +9,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
+import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.webkit.WebChromeClient
@@ -18,6 +20,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import org.mlm.adblock.AdblockEngine
@@ -36,64 +39,86 @@ class MainActivity : Activity() {
     @Volatile private var protectionEnabled = true
     private lateinit var browser: WebView
     private lateinit var addressBar: EditText
+    private lateinit var homeSearch: EditText
+    private lateinit var homePanel: LinearLayout
     private lateinit var statusText: TextView
     private lateinit var shieldButton: Button
     private lateinit var countText: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = Color.rgb(12, 15, 25)
-        window.navigationBarColor = Color.rgb(12, 15, 25)
+        window.statusBarColor = Color.rgb(250, 250, 252)
+        window.navigationBarColor = Color.rgb(250, 250, 252)
+        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
         buildBrowserUi()
         initializeAdblock()
-        if (savedInstanceState == null) browser.loadUrl(HOME_URL)
     }
 
     private fun buildBrowserUi() {
+        val ink = Color.rgb(38, 38, 48)
+        val muted = Color.rgb(135, 135, 150)
+        val accent = Color.rgb(120, 112, 190)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.rgb(12, 15, 25))
+            setBackgroundColor(Color.rgb(250, 250, 252))
         }
+
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(12, 12, 12, 8)
+            setPadding(18, 12, 18, 8)
         }
         val brand = TextView(this).apply {
-            text = "P"
-            textSize = 24f
+            text = "M"
+            textSize = 25f
             typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.rgb(170, 160, 255))
+            setTextColor(accent)
             gravity = Gravity.CENTER
-            setPadding(8, 0, 12, 0)
+        }
+        val headerTitle = TextView(this).apply {
+            text = "Google"
+            textSize = 15f
+            setTextColor(ink)
+            gravity = Gravity.CENTER
+        }
+        val menuButton = TextView(this).apply {
+            text = "☰"
+            textSize = 22f
+            setTextColor(muted)
+            gravity = Gravity.CENTER
+            setPadding(12, 4, 4, 4)
+            setOnClickListener { showSettings() }
         }
         addressBar = EditText(this).apply {
             hint = "Search or enter website"
             setSingleLine(true)
             textSize = 14f
-            setTextColor(Color.WHITE)
-            setHintTextColor(Color.LTGRAY)
+            setTextColor(ink)
+            setHintTextColor(muted)
             setPadding(14, 4, 14, 4)
-            setBackgroundColor(Color.rgb(35, 40, 56))
+            setBackgroundColor(Color.rgb(242, 242, 247))
             imeOptions = EditorInfo.IME_ACTION_GO
+            visibility = View.GONE
             setOnEditorActionListener { _, action, _ ->
                 if (action == EditorInfo.IME_ACTION_GO) {
-                    navigate(addressBar.text.toString())
+                    navigate(text.toString())
                     true
                 } else false
             }
         }
-        header.addView(brand, LinearLayout.LayoutParams(42, 48))
-        header.addView(addressBar, LinearLayout.LayoutParams(0, 48, 1f))
+        header.addView(brand, LinearLayout.LayoutParams(42, 44))
+        header.addView(headerTitle, LinearLayout.LayoutParams(0, 44, 1f))
+        header.addView(addressBar, LinearLayout.LayoutParams(0, 44, 1f))
+        header.addView(menuButton, LinearLayout.LayoutParams(40, 44))
 
         val controls = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(12, 0, 12, 8)
+            setPadding(18, 0, 18, 6)
         }
         shieldButton = Button(this).apply {
             text = "Shield ON"
-            textSize = 11f
+            textSize = 10f
             setOnClickListener {
                 protectionEnabled = !protectionEnabled
                 updateShieldUi()
@@ -101,21 +126,82 @@ class MainActivity : Activity() {
         }
         countText = TextView(this).apply {
             text = "0 blocked"
-            textSize = 12f
-            setTextColor(Color.rgb(180, 190, 210))
-            setPadding(12, 0, 0, 0)
+            textSize = 11f
+            setTextColor(muted)
+            setPadding(8, 0, 0, 0)
         }
         statusText = TextView(this).apply {
             text = "Preparing protection…"
-            textSize = 11f
-            setTextColor(Color.rgb(160, 170, 190))
+            textSize = 10f
+            setTextColor(muted)
             gravity = Gravity.END or Gravity.CENTER_VERTICAL
         }
         controls.addView(shieldButton)
         controls.addView(countText)
-        controls.addView(statusText, LinearLayout.LayoutParams(0, 42, 1f))
+        controls.addView(statusText, LinearLayout.LayoutParams(0, 40, 1f))
+
+        val contentFrame = FrameLayout(this)
+        homePanel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(30, 24, 30, 40)
+            setBackgroundColor(Color.rgb(250, 250, 252))
+        }
+        val master = TextView(this).apply {
+            text = "MASTER"
+            textSize = 28f
+            letterSpacing = 0.08f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            setTextColor(Color.rgb(105, 105, 115))
+            gravity = Gravity.CENTER
+        }
+        val searchRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(14, 2, 10, 2)
+            setBackgroundColor(Color.rgb(241, 241, 246))
+        }
+        val searchIcon = TextView(this).apply {
+            text = "⌕"
+            textSize = 25f
+            setTextColor(muted)
+            gravity = Gravity.CENTER
+        }
+        homeSearch = EditText(this).apply {
+            hint = "Search or enter website"
+            setSingleLine(true)
+            textSize = 14f
+            setTextColor(ink)
+            setHintTextColor(muted)
+            setPadding(8, 8, 8, 8)
+            setBackgroundColor(Color.TRANSPARENT)
+            imeOptions = EditorInfo.IME_ACTION_SEARCH
+            setOnEditorActionListener { _, action, _ ->
+                if (action == EditorInfo.IME_ACTION_SEARCH || action == EditorInfo.IME_ACTION_GO) {
+                    navigate(text.toString())
+                    true
+                } else false
+            }
+        }
+        val go = TextView(this).apply {
+            text = "Go"
+            textSize = 13f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(accent)
+            gravity = Gravity.CENTER
+            setPadding(10, 10, 6, 10)
+            setOnClickListener { navigate(homeSearch.text.toString()) }
+        }
+        searchRow.addView(searchIcon, LinearLayout.LayoutParams(28, 48))
+        searchRow.addView(homeSearch, LinearLayout.LayoutParams(0, 48, 1f))
+        searchRow.addView(go, LinearLayout.LayoutParams(42, 48))
+        homePanel.addView(master, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 54))
+        val gap = View(this)
+        homePanel.addView(gap, LinearLayout.LayoutParams(1, 14))
+        homePanel.addView(searchRow, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 52))
 
         browser = WebView(this).apply {
+            visibility = View.GONE
             setBackgroundColor(Color.WHITE)
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
@@ -135,22 +221,14 @@ class MainActivity : Activity() {
                     return try {
                         val accept = request.requestHeaders["Accept"] ?: ""
                         val requestType = RequestTypeMapper.from(request.url, accept)
-                        val decision = engine.checkNetworkRequest(
-                            request.url.toString(),
-                            view?.url ?: "",
-                            requestType
-                        )
+                        val decision = engine.checkNetworkRequest(request.url.toString(), view?.url ?: "", requestType)
                         if (decision.matched) {
                             val total = blockedCount.incrementAndGet()
                             mainHandler.post { countText.text = "$total blocked" }
-                            WebResourceResponse(
-                                "text/plain", "utf-8", 403, "Blocked by Pointlook",
-                                emptyMap(), ByteArrayInputStream(ByteArray(0))
-                            )
+                            WebResourceResponse("text/plain", "utf-8", 403, "Blocked by Pointlook",
+                                emptyMap(), ByteArrayInputStream(ByteArray(0)))
                         } else null
-                    } catch (_: Exception) {
-                        null
-                    }
+                    } catch (_: Exception) { null }
                 }
 
                 override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
@@ -166,25 +244,34 @@ class MainActivity : Activity() {
                 }
             }
         }
+        contentFrame.addView(browser, FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        contentFrame.addView(homePanel, FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
 
         val bottom = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            setPadding(8, 6, 8, 8)
+            setPadding(8, 7, 8, 10)
+            setBackgroundColor(Color.rgb(250, 250, 252))
         }
-        fun navButton(label: String, action: () -> Unit) = Button(this).apply {
+        fun navButton(label: String, action: () -> Unit) = TextView(this).apply {
             text = label
-            textSize = 11f
+            textSize = 12f
+            setTextColor(ink)
+            gravity = Gravity.CENTER
+            setPadding(14, 8, 14, 8)
             setOnClickListener { action() }
         }
-        bottom.addView(navButton("Back") { if (browser.canGoBack()) browser.goBack() })
-        bottom.addView(navButton("Forward") { if (browser.canGoForward()) browser.goForward() })
-        bottom.addView(navButton("Home") { browser.loadUrl(HOME_URL) })
-        bottom.addView(navButton("Reload") { browser.reload() })
+        bottom.addView(navButton("◉") { showHome() })
+        bottom.addView(navButton("⌂") { showHome() })
+        bottom.addView(navButton("↻") { if (browser.visibility == View.VISIBLE) browser.reload() })
+        bottom.addView(navButton("▢") { showSettings() })
 
         root.addView(header)
         root.addView(controls)
-        root.addView(browser, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+        root.addView(contentFrame, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         root.addView(bottom)
         setContentView(root)
     }
@@ -194,10 +281,44 @@ class MainActivity : Activity() {
         if (value.isEmpty()) return
         val target = when {
             value.startsWith("https://") || value.startsWith("http://") -> value
-            value.contains(" ") || !value.contains(".") -> "https://www.google.com/search?q=" + Uri.encode(value)
+            value.contains(" ") || !value.contains(".") ->
+                "https://www.google.com/search?q=" + Uri.encode(value)
             else -> "https://$value"
         }
+        homePanel.visibility = View.GONE
+        browser.visibility = View.VISIBLE
+        addressBar.visibility = View.VISIBLE
+        addressBar.setText(target)
         browser.loadUrl(target)
+    }
+
+    private fun showHome() {
+        browser.stopLoading()
+        browser.visibility = View.GONE
+        homePanel.visibility = View.VISIBLE
+        addressBar.visibility = View.GONE
+        homeSearch.setText("")
+    }
+
+    private fun showSettings() {
+        val options = arrayOf(
+            if (protectionEnabled) "AdBlock: ON" else "AdBlock: OFF",
+            "Blocked requests: ${blockedCount.get()}",
+            "Home"
+        )
+        AlertDialog.Builder(this)
+            .setTitle("Settings")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> {
+                        protectionEnabled = !protectionEnabled
+                        updateShieldUi()
+                    }
+                    2 -> showHome()
+                }
+            }
+            .setNegativeButton("Close", null)
+            .show()
     }
 
     private fun initializeAdblock() {
@@ -237,7 +358,13 @@ class MainActivity : Activity() {
 
     @Deprecated("Deprecated in Android API")
     override fun onBackPressed() {
-        if (::browser.isInitialized && browser.canGoBack()) browser.goBack() else super.onBackPressed()
+        if (::browser.isInitialized && browser.visibility == View.VISIBLE && browser.canGoBack()) {
+            browser.goBack()
+        } else if (::homePanel.isInitialized && homePanel.visibility != View.VISIBLE) {
+            showHome()
+        } else {
+            super.onBackPressed()
+        }
     }
 
     override fun onDestroy() {
@@ -248,7 +375,6 @@ class MainActivity : Activity() {
     }
 
     companion object {
-        private const val HOME_URL = "https://www.google.com"
         private const val EASYLIST_URL = "https://easylist.to/easylist/easylist.txt"
     }
 }
