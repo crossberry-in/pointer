@@ -4,7 +4,7 @@ plugins {
 }
 android {
     namespace = "com.crossberry.pointlook"
-    compileSdk = 35
+    compileSdk = 37
     defaultConfig {
         applicationId = "com.crossberry.pointlook"
         minSdk = 26
