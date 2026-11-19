@@ -170,6 +170,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // Async result of requestFocusNodeHref: bundle carries "src", "url", "title"
+    private val hitTestHandler = Handler(Looper.getMainLooper()) { msg ->
+        val image = msg.data.getString("src") ?: msg.data.getString("url")
+        if (image != null) offerMediaSave(image)
+        true
+    }
+
     private fun handleLongPress(): Boolean {
         val hit = browser.hitTestResult
         return when (hit.type) {
@@ -178,10 +185,7 @@ class MainActivity : AppCompatActivity() {
                 true
             }
             WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE -> {
-                val href = Bundle()
-                browser.requestFocusNodeHref(href)
-                val image = href.getString("src") ?: href.getString("url") ?: hit.extra
-                image?.let { offerMediaSave(it) }
+                browser.requestFocusNodeHref(android.os.Message.obtain(hitTestHandler))
                 true
             }
             WebView.HitTestResult.SRC_ANCHOR_TYPE -> {
