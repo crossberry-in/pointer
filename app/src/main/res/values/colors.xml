@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="chrome_dark">#0C0F19</color>
+    <color name="chrome_surface">#232838</color>
+    <color name="chrome_text_primary">#FFFFFF</color>
+    <color name="chrome_text_secondary">#B4BECF</color>
+    <color name="chrome_icon">#C9CFE0</color>
+    <color name="chrome_hint">#8A93B2</color>
+    <color name="brand_accent">#AAA0FF</color>
+    <color name="brand_primary">#B69DFF</color>
+    <color name="brand_container">#4A4458</color>
+    <color name="brand_on_container">#EADDFF</color>
+    <color name="brand_on_container_dark">#21005D</color>
+    <color name="white">#FFFFFF</color>
+</resources>
